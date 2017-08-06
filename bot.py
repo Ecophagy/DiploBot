@@ -84,6 +84,7 @@ async def add(ctx):
     else:
         await bot.say('Invalid Country')
 
+
 @bot.command(pass_context=True)
 async def eliminate(ctx):
     """GM Only: Eliminate a country"""
@@ -98,6 +99,18 @@ async def eliminate(ctx):
                 await bot.say('Country Eliminated')
     else:
         await bot.say('Only the GM can eliminate players!')
+
+
+@bot.command(pass_context=True)
+async def reset(ctx):
+    """GM Only: Reset moves for a new turn"""
+    if user_is_gm(ctx.message.author):
+        with session_scope() as session:
+            for row in session.query(Movelist):
+                row.moveset = None
+        await bot.say('Moves reset')
+    else:
+        await bot.say('Only the GM can reset moves')
 
 
 @bot.command(pass_context=True)
