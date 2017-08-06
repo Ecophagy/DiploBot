@@ -5,8 +5,17 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from db import Movelist, Base, Database_Location, Country
 from contextlib import contextmanager
+
 description = '''Bot for receiving diplomacy commands'''
 bot = commands.Bot(command_prefix='!', description=description)
+
+
+def user_is_gm(user):
+    with open('config.json') as data_file:
+        data = json.load(data_file)
+        gm_id = data["gm"]
+        return user.id == gm_id
+
 
 @contextmanager
 def session_scope():
@@ -35,16 +44,21 @@ async def on_ready():
     Base.metadata.create_all(engine)
     print('Database created')
 
+
 @bot.command(pass_context=True)
 async def moves(ctx):
     """Send your moves to the bot"""
     if ctx.message.channel.is_private:
         with session_scope() as session:
             moves = session.query(Movelist).filter(Movelist.discord_id == ctx.message.author.id).one()
-            moves.moveset = ctx.message.content
-        await bot.say('Moves received! If you wish to change them, please resubmit them in their entirety')
+            if not moves.eliminated:
+                moves.moveset = ctx.message.content
+                await bot.say('Moves received! If you wish to change them, please resubmit them in their entirety')
+            else:
+                await bot.say('You have been eliminated so moves have not been recorded')
     else:
         await bot.say('You can only send moves in private!')
+
 
 @bot.command(pass_context=True)
 async def add(ctx):
@@ -70,7 +84,20 @@ async def add(ctx):
     else:
         await bot.say('Invalid Country')
 
-
+@bot.command(pass_context=True)
+async def eliminate(ctx):
+    """GM Only: Eliminate a country"""
+    if user_is_gm(ctx.message.author):
+        with session_scope() as session:
+            command, country = ctx.message.content.split(" ")
+            row = session.query(Movelist).filter(Movelist.country == country).one_or_none()
+            if row is None:
+                await bot.say("Invalid Country")
+            else:
+                row.eliminated = True
+                await bot.say('Country Eliminated')
+    else:
+        await bot.say('Only the GM can eliminate players!')
 
 
 @bot.command(pass_context=True)
