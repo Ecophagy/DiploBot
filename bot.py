@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-import asyncio
 import json
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -88,7 +87,11 @@ async def test(ctx):
         await bot.say('I only test in private')
 
 
-with open('config.json') as data_file:
-    data = json.load(data_file)
+def main():
+    with open('config.json') as data_file:
+        data = json.load(data_file)
 
-bot.run(data["token"])
+    bot.run(data["token"])
+
+if __name__ == "__main__":
+    main()
