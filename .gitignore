@@ -104,3 +104,4 @@ ENV/
 config.json
 .idea/workspace.xml
 .idea/tasks.xml
+*.db
