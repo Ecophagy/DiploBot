@@ -123,20 +123,6 @@ async def reset(ctx):
         await bot.say('Only the GM can reset moves')
 
 
-@bot.command(pass_context=True)
-async def test(ctx):
-    if ctx.message.channel.is_private:
-        counter = 0
-        tmp = await bot.say('Calculating messages...')
-        async for log in bot.logs_from(ctx.message.channel, limit=100):
-            if log.author == ctx.message.author:
-                counter += 1
-
-        await bot.edit_message(tmp, 'You have {} messages.'.format(counter))
-    else:
-        await bot.say('I only test in private')
-
-
 def main():
     with open('config.json') as data_file:
         data = json.load(data_file)
