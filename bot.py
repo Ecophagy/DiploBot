@@ -84,6 +84,13 @@ async def add(ctx):
     else:
         await bot.say('Invalid Country')
 
+@bot.command()
+async def submitted():
+    """Find out how many people have submitted moves"""
+    with session_scope() as session:
+        total = session.query(Movelist).filter(Movelist.eliminated == False).count()
+        submitted = session.query(Movelist).filter(Movelist.moveset != None).count()
+    await bot.say(str(submitted) + "/" + str(total) + " players have submitted")
 
 @bot.command(pass_context=True)
 async def eliminate(ctx):
