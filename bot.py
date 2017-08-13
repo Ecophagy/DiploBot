@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 import json
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
 from db import Movelist, Base, Database_Location, Country
 from contextlib import contextmanager
@@ -54,6 +54,9 @@ async def moves(ctx):
             if not moves.eliminated:
                 moves.moveset = ctx.message.content
                 await bot.say('Moves received! If you wish to change them, please resubmit them in their entirety')
+                #If all players have submitted moves, tell the GM
+                if session.query(Movelist).filter(and_(Movelist.moveset == None), (Movelist.eliminated == False)).count() == 0:
+                    await bot.say("ALERT: All moves have been received, please tell the GM")
             else:
                 await bot.say('You have been eliminated so moves have not been recorded')
     else:
