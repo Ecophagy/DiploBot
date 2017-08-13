@@ -122,6 +122,15 @@ async def reset(ctx):
     else:
         await bot.say('Only the GM can reset moves')
 
+@bot.command(pass_context=True)
+async def getmoves(ctx):
+    """GM Only: Get the moves"""
+    if user_is_gm(ctx.message.author):
+        with session_scope() as session:
+            for country, moves in session.query(Movelist.country, Movelist.moveset).all():
+                msg = '``` __{0}__ \r {1}```'.format(country, moves)
+                await bot.send_message(ctx.message.author, msg)
+
 
 def main():
     with open('config.json') as data_file:
