@@ -10,6 +10,8 @@ description = '''Bot for receiving diplomacy commands'''
 bot = commands.Bot(command_prefix='!', description=description)
 
 userlist = []
+gm = None
+
 
 def user_is_gm(user):
     with open('config.json') as data_file:
@@ -47,6 +49,9 @@ async def on_ready():
     print('------')
     populate_user_list()
     print('User list created')
+    set_gm()
+    print('Set GM')
+
 
 def populate_user_list():
     """Populate list of users from players"""
@@ -57,6 +62,16 @@ def populate_user_list():
                 userlist.append(member)
 
 
+def set_gm():
+    """Find and set gm"""
+    with session_scope() as session:
+        for server in bot.servers:
+            for row in session.query(Movelist):
+                member = discord.utils.find(lambda m: m.id == row.discord_id, server.members)
+                if user_is_gm(member):
+                    global gm
+                    gm = member
+                    return
 
 @bot.command(pass_context=True)
 async def moves(ctx):
@@ -69,7 +84,7 @@ async def moves(ctx):
                 await bot.say('Moves received! If you wish to change them, please resubmit them in their entirety')
                 #If all players have submitted moves, tell the GM
                 if session.query(Movelist).filter(and_(Movelist.moveset == None), (Movelist.eliminated == False)).count() == 0:
-                    await bot.say("ALERT: All moves have been received, please tell the GM")
+                    await bot.send_message(gm, 'All moves have been submitted')
             else:
                 await bot.say('You have been eliminated so moves have not been recorded')
     else:
@@ -114,7 +129,7 @@ async def submitted():
 @bot.command(pass_context=True)
 async def eliminate(ctx):
     """GM Only: Eliminate a country"""
-    if user_is_gm(ctx.message.author):
+    if ctx.message.author == gm:
         with session_scope() as session:
             command, country = ctx.message.content.split(" ")
             row = session.query(Movelist).filter(Movelist.country == country).one_or_none()
@@ -130,7 +145,7 @@ async def eliminate(ctx):
 @bot.command(pass_context=True)
 async def reset(ctx):
     """GM Only: Reset moves for a new turn"""
-    if user_is_gm(ctx.message.author):
+    if ctx.message.author == gm:
         with session_scope() as session:
             for row in session.query(Movelist):
                 row.moveset = None
@@ -142,7 +157,7 @@ async def reset(ctx):
 @bot.command(pass_context=True)
 async def getmoves(ctx):
     """GM Only: Get the moves"""
-    if user_is_gm(ctx.message.author):
+    if ctx.message.author == gm:
         with session_scope() as session:
             for country, moves in session.query(Movelist.country, Movelist.moveset).all():
                 msg = '``` __{0}__ \r {1}```'.format(country, moves)
