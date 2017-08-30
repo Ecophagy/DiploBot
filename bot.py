@@ -9,6 +9,7 @@ from contextlib import contextmanager
 description = '''Bot for receiving diplomacy commands'''
 bot = commands.Bot(command_prefix='!', description=description)
 
+userlist = []
 
 def user_is_gm(user):
     with open('config.json') as data_file:
@@ -43,6 +44,18 @@ async def on_ready():
     engine = create_engine(Database_Location)
     Base.metadata.create_all(engine)
     print('Database created')
+    print('------')
+    populate_user_list()
+    print('User list created')
+
+def populate_user_list():
+    """Populate list of users from players"""
+    with session_scope() as session:
+        for server in bot.servers: #NOTE: If the bot is in more than one server this will need something smarter
+            for row in session.query(Movelist):
+                member = discord.utils.find(lambda m: m.id == row.discord_id, server.members)
+                userlist.append(member)
+
 
 
 @bot.command(pass_context=True)
@@ -79,6 +92,7 @@ async def add(ctx):
                                         discord_id=member.id,
                                         moveset=None)
                     session.add(new_movelist)
+                    userlist.append(member)
                     await bot.say('Player added')
                 else:
                     await bot.say('That country has already been allocated')
@@ -87,13 +101,15 @@ async def add(ctx):
     else:
         await bot.say('Invalid Country')
 
+
 @bot.command()
 async def submitted():
     """Find out how many people have submitted moves"""
     with session_scope() as session:
-        total = session.query(Movelist).filter(Movelist.eliminated == False).count()
-        submitted = session.query(Movelist).filter(Movelist.moveset != None).count()
+        total = session.query(Movelist).filter(Movelist.eliminated is False).count()
+        submitted = session.query(Movelist).filter(Movelist.moveset is not None).count()
     await bot.say(str(submitted) + "/" + str(total) + " players have submitted")
+
 
 @bot.command(pass_context=True)
 async def eliminate(ctx):
@@ -121,6 +137,7 @@ async def reset(ctx):
         await bot.say('Moves reset')
     else:
         await bot.say('Only the GM can reset moves')
+
 
 @bot.command(pass_context=True)
 async def getmoves(ctx):
