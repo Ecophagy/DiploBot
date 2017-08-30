@@ -121,8 +121,8 @@ async def add(ctx):
 async def submitted():
     """Find out how many people have submitted moves"""
     with session_scope() as session:
-        total = session.query(Movelist).filter(Movelist.eliminated is False).count()
-        submitted = session.query(Movelist).filter(Movelist.moveset is not None).count()
+        total = session.query(Movelist).filter(Movelist.eliminated.is_(False)).count()
+        submitted = session.query(Movelist).filter(Movelist.moveset.isnot(None)).count()
     await bot.say(str(submitted) + "/" + str(total) + " players have submitted")
 
 
