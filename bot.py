@@ -78,9 +78,9 @@ async def moves(ctx):
     """Send your moves to the bot"""
     if ctx.message.channel.is_private:
         with session_scope() as session:
-            moves = session.query(Movelist).filter(Movelist.discord_id == ctx.message.author.id).one()
-            if not moves.eliminated:
-                moves.moveset = ctx.message.content
+            row = session.query(Movelist).filter(Movelist.discord_id == ctx.message.author.id).one()
+            if not row.eliminated:
+                row.moveset = ctx.message.content[7:]  # Remove "!moves"
                 await bot.say('Moves received! If you wish to change them, please resubmit them in their entirety')
                 #If all players have submitted moves, tell the GM
                 if session.query(Movelist).filter(and_(Movelist.moveset == None), (Movelist.eliminated == False)).count() == 0:
