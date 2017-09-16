@@ -160,9 +160,21 @@ async def getmoves(ctx):
     if ctx.message.author == gm:
         with session_scope() as session:
             for country, moves in session.query(Movelist.country, Movelist.moveset).all():
-                msg = '``` __{0}__ \r {1}```'.format(country, moves)
+                msg = '```md\r __{0}__ \r {1}```'.format(country, moves)
                 await bot.send_message(ctx.message.author, msg)
 
+@bot.command()
+async def players():
+    """Print the playerlist"""
+    with session_scope() as session:
+        playerlist = '`Playerlist`\r'
+        for country, playername, eliminated in session.query(Movelist.country, Movelist.playername, Movelist.eliminated).all():
+            player = '{0} - {1}'.format(country, playername)
+            if eliminated:
+                player = '~~{0}~~'.format(player)
+            playerlist += player + '\r'
+
+        await bot.say(playerlist)
 
 def main():
     with open('config.json') as data_file:
