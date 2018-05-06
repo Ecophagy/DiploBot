@@ -5,13 +5,14 @@ from sqlalchemy import create_engine, and_
 from sqlalchemy.orm import sessionmaker
 from db import Movelist, Base, Database_Location, Country
 from contextlib import contextmanager
+import datetime
 
 description = '''Bot for receiving diplomacy commands'''
 bot = commands.Bot(command_prefix='!', description=description)
 
 userlist = []
 gm = None
-
+deadline = None
 
 def user_is_gm(user):
     with open('config.json') as data_file:
@@ -51,6 +52,8 @@ async def on_ready():
     print('User list created')
     set_gm()
     print('Set GM')
+    global deadline
+    deadline = None
 
 
 def populate_user_list():
@@ -192,6 +195,47 @@ async def players():
             playerlist += player + '\r'
 
         await bot.say(playerlist)
+
+@bot.command(pass_context=True)
+async def setdeadline(ctx):
+    """GM Only: Set the deadline in UTC time
+
+    Format is %d %B %Y %H:%M(e.g. 07 May 2018 23:59)
+    Pass with no parameters to cancel deadline"""
+    if ctx.message.author == gm:
+        global deadline
+        msg = ctx.message.content.split(" ")
+        if len(msg) == 1:
+            # No parameters, cancel deadline
+            deadline = None
+            await bot.say('Deadline cancelled')
+        else:
+            input_deadline = ''.join(msg[1::])
+            try:
+                naive_time = datetime.datetime.strptime(input_deadline,'%d%B%Y%H:%M')
+                aware_time = naive_time.replace(tzinfo=datetime.timezone.utc)
+                if aware_time < datetime.datetime.now(datetime.timezone.utc):
+                    await bot.say('ERROR: Deadline is in the past')
+                else:
+                    deadline = aware_time
+                    await bot.say('Deadline set')
+            except ValueError:
+                await bot.say('Invalid deadline')
+    else:
+        await bot.say('Only the GM can set the deadline')
+
+@bot.command()
+async def deadline():
+    """Get the deadline"""
+    global deadline
+    if deadline == None:
+        await bot.say('Deadline not set')
+    else:
+        time_difference_seconds = (deadline - datetime.datetime.now(datetime.timezone.utc)).total_seconds()
+        h = int(time_difference_seconds//3600)
+        m = int((time_difference_seconds%3600)//60)
+        await bot.say('Deadline is at {0} UTC ({1} hours, {2} minutes)'.format(deadline.strftime('%d %B %H:%M'), h, m))
+
 
 def main():
     with open('config.json') as data_file:
