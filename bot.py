@@ -155,13 +155,30 @@ async def reset(ctx):
 
 
 @bot.command(pass_context=True)
-async def getmoves(ctx):
+async def allmoves(ctx):
     """GM Only: Get the moves"""
     if ctx.message.author == gm:
         with session_scope() as session:
             for country, moves in session.query(Movelist.country, Movelist.moveset).all():
                 msg = '```md\r __{0}__ \r {1}```'.format(country, moves)
                 await bot.send_message(ctx.message.author, msg)
+    else:
+        await bot.say('Only the GM can get the moves')
+
+@bot.command(pass_context=True)
+async def getmoves(ctx):
+    """GM Only: Get the moves of a specific country"""
+    if ctx.message.author == gm:
+        command, target_country = ctx.message.content.split(" ")
+        if target_country in Country.__members__:
+            with session_scope() as session:
+                for country, moves in session.query(Movelist.country, Movelist.moveset).filter(Movelist.country==target_country):
+                    msg = '```md\r __{0}__ \r {1}```'.format(country, moves)
+                    await bot.send_message(ctx.message.author, msg)
+        else:
+            await bot.say('Invalid country name')
+    else:
+        await bot.say('Only the GM can get the moves')
 
 @bot.command()
 async def players():
